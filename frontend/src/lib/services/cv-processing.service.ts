@@ -2,8 +2,6 @@ import { supabaseAdmin } from '../supabase-admin';
 import { EmbeddingService } from './embedding.service';
 import axios from 'axios';
 import FormData from 'form-data';
-// @ts-ignore
-import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 import { CONFIG } from '../config';
 
@@ -60,17 +58,16 @@ export class CvProcessingService {
 
         } catch (error: any) {
             console.error('❌ Gemini Text extraction failed:', error.message);
-            // Fallback to basic pdf-parse if Gemini fails
+            // Fallback: DOCX only
             try {
-                if (mimeType === 'application/pdf') {
-                    const data = await pdf(buffer);
-                    return data.text || '';
-                } else if (mimeType.includes('word') || mimeType.includes('docx')) {
+                if (mimeType.includes('word') || mimeType.includes('docx')) {
                     const result = await mammoth.extractRawText({ buffer });
                     return result.value || '';
+                } else {
+                    console.warn('⚠️ PDF fallback not available in serverless environment (requires pdf-parse which is incompatible). Relying on Gemini.');
                 }
             } catch (e) {
-                console.error('Matches local fallback failed too');
+                console.error('Local fallback failed too');
             }
         }
         return '';
