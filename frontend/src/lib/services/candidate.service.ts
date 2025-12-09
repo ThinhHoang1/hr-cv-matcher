@@ -199,12 +199,24 @@ Return ONLY the JSON, no markdown, no explanation.
 
         // 6. Sort by final score
         const sortedResults = scoredCandidates
-            .sort((a, b) => b.finalScore - a.finalScore)
-            .slice(0, limit);
+            .sort((a, b) => b.finalScore - a.finalScore);
 
-        const filteredResults = sortedResults.length > 0 ? sortedResults : scoredCandidates.slice(0, limit);
+        // Deduplicate: Keep only the first occurrence of each email (which is the highest score due to sort)
+        const seenEmails = new Set<string>();
+        const uniqueResults = [];
 
-        console.log(`✅ Found ${filteredResults.length} matching candidates`);
+        for (const result of sortedResults) {
+            const email = result.candidate.email ? result.candidate.email.toLowerCase().trim() : '';
+            if (email && seenEmails.has(email)) {
+                continue;
+            }
+            if (email) seenEmails.add(email);
+            uniqueResults.push(result);
+        }
+
+        const filteredResults = uniqueResults.slice(0, limit);
+
+        console.log(`✅ Found ${filteredResults.length} matching candidates (deduplicated)`);
 
         // 7. Generate AI insights
         const resultsWithInsights = await Promise.all(
