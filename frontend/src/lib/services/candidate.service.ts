@@ -214,9 +214,12 @@ Return ONLY the JSON, no markdown, no explanation.
             uniqueResults.push(result);
         }
 
-        const filteredResults = uniqueResults.slice(0, limit);
+        // FILTER: Only return results with score >= 0.35 (35%) to avoid garbage
+        const filteredResults = uniqueResults
+            .filter(r => r.finalScore >= 0.35)
+            .slice(0, limit);
 
-        console.log(`✅ Found ${filteredResults.length} matching candidates (deduplicated)`);
+        console.log(`✅ Found ${filteredResults.length} matching candidates (score >= 0.35)`);
 
         // 7. Generate AI insights
         const resultsWithInsights = await Promise.all(
