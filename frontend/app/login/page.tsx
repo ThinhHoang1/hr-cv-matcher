@@ -30,7 +30,6 @@ export default function LoginPage() {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    scopes: 'https://www.googleapis.com/auth/gmail.send',
                     redirectTo: `${window.location.origin}/auth/callback`,
                 },
             });
