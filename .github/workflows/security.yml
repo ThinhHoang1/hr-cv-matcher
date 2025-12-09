@@ -1,0 +1,91 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run security scan every Monday at 9 AM
+    - cron: '0 9 * * 1'
+
+jobs:
+  dependency-check:
+    name: Check Dependencies for Vulnerabilities
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        directory: ['backend', 'frontend']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Run npm audit (${{ matrix.directory }})
+        working-directory: ./${{ matrix.directory }}
+        run: |
+          npm audit --audit-level=moderate
+        continue-on-error: true
+      
+      - name: Check for outdated packages
+        working-directory: ./${{ matrix.directory }}
+        run: |
+          npm outdated || true
+  
+  secret-scan:
+    name: Scan for Exposed Secrets
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+  
+  env-check:
+    name: Verify .env files not committed
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check for .env files
+        run: |
+          if git ls-files | grep -E '\.env$|\.env\.local$|\.env\.production$'; then
+            echo "❌ ERROR: .env files found in repository!"
+            echo "Please remove them immediately and add to .gitignore"
+            exit 1
+          else
+            echo "✅ No .env files found in repository"
+          fi
+      
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Scanning for potential hardcoded secrets..."
+          
+          # Check for common patterns (basic check)
+          if grep -rE "(SUPABASE_SERVICE_ROLE_KEY|GEMINI_API_KEY|SECRET|PASSWORD).*=.*[a-zA-Z0-9]{20,}" \
+             --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
+             --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.next \
+             backend/ frontend/ 2>/dev/null; then
+            echo "⚠️  WARNING: Potential hardcoded secrets found!"
+            echo "Please review the above files"
+            exit 1
+          else
+            echo "✅ No obvious hardcoded secrets found"
+          fi

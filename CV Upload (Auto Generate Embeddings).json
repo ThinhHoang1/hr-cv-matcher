@@ -1,0 +1,251 @@
+{
+  "name": "CV Upload (Auto Generate Embeddings)",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Extract all files from webhook\nconst items = [];\n\nfor (const item of $input.all()) {\n  if (item.binary) {\n    for (const key in item.binary) {\n      const file = item.binary[key];\n      items.push({\n        json: {\n          fileName: file.fileName,\n          mimeType: file.mimeType\n        },\n        binary: {\n          data: file\n        }\n      });\n    }\n  }\n}\n\nreturn items;"
+      },
+      "id": "997a425c-087c-40d6-8d7b-6119966073f2",
+      "name": "Extract All Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare text for Gemini\nconst extractedText = $json.data || $json.text || '';\n\nreturn [{\n  json: {\n    fileName: $json.fileName,\n    extractedText: extractedText\n  }\n}];"
+      },
+      "id": "ca49d5f1-04fd-45a2-aa24-ef68ccc7a2c0",
+      "name": "Prepare Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert HR assistant. Extract information from this CV and return ONLY valid JSON:\n\nCV Text:\n{{ $json.extractedText }}\n\nReturn in this EXACT format:\n{\n  \"name\": \"Full Name\",\n  \"email\": \"email@example.com\",\n  \"phone\": \"+country number\",\n  \"skills\": [\"skill1\", \"skill2\"],\n  \"experience_years\": 5,\n  \"summary\": \"Brief professional summary\"\n}\n\nReturn ONLY JSON, no markdown, no explanation.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        1328,
+        528
+      ],
+      "id": "96eb3cdc-4b1a-47bd-86e8-9a7bb5344d26",
+      "name": "AI Agent - Parse CV"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        752
+      ],
+      "id": "c75b953a-e17e-4cd6-a079-ac81fa175f18",
+      "name": "Google Gemini Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rtawIhVfpxXU4all",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Clean up AI response\nlet parsedData;\n\ntry {\n  // Get response from AI Agent\n  const response = $json.output || $json.response || $json.text || JSON.stringify($json);\n  \n  // Remove markdown code blocks\n  const cleanedResponse = response\n    .replace(/```json\\n?/g, '')\n    .replace(/```\\n?/g, '')\n    .trim();\n  \n  // Parse JSON\n  parsedData = JSON.parse(cleanedResponse);\n  \n} catch (error) {\n  // Fallback if parsing fails\n  parsedData = {\n    name: \"Parse Error - Check CV format\",\n    email: \"error@example.com\",\n    phone: \"+84 000 000 000\",\n    skills: [\"Unknown\"],\n    experience_years: 0,\n    summary: \"Failed to parse CV. Error: \" + error.message\n  };\n}\n\nreturn [{ json: parsedData }];"
+      },
+      "id": "6463de05-fff4-4320-884b-282d7ec60468",
+      "name": "Format JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all parsed candidates\nconst candidates = $input.all().map(item => item.json);\n\nreturn [{\n  json: {\n    success: true,\n    processed: candidates.length,\n    candidates: candidates\n  }\n}];"
+      },
+      "id": "5b0aed46-95bd-49e2-bd9c-80ed0e9722a1",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cv-upload",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "7b63bfa8-a661-4fe7-a9dd-66742000cb0c",
+      "name": "Webhook - CV Upload1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        304,
+        672
+      ],
+      "webhookId": "cv-upload-webhook"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "3d2364da-3f2a-499d-9893-e5e787fb8721",
+      "name": "Extract PDF Text1",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        800,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "85c82de0-f321-433c-af33-3e6475eb425d",
+      "name": "Respond Success1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2128,
+        672
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Extract All Files": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Text": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Parse CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Parse CV": {
+      "main": [
+        [
+          {
+            "node": "Format JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Parse CV",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format JSON": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Respond Success1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - CV Upload1": {
+      "main": [
+        [
+          {
+            "node": "Extract All Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7e935437-1616-4ffe-a8a4-5eb4a271618f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1f0ace80c15495c142be3ac9803992d52e43298520239a6bf112c6360cbfde62"
+  },
+  "id": "196Q9tJh5IZ0JXEa",
+  "tags": []
+}

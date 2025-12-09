@@ -1,0 +1,154 @@
+{
+  "name": "Send Emails via User Gmail (OAuth)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-invite",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "1032175d-f663-40ef-9983-6f29d806067c",
+      "name": "Webhook - Send Email",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        2944,
+        880
+      ],
+      "webhookId": "690290b2-868c-459a-a029-132b9f6d0823"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract candidates and job info\nconst { \n  candidates, \n  jobTitle, \n  customMessage,\n  emailSubject,\n  emailBody,\n  interviewDate,\n  interviewTime,\n  venue,\n  mapLink,\n  contactName,\n  contactPhone,\n  participants,\n  language,\n  googleAccessToken\n} = $json.body;\n\nfunction createEmail(to, subject, body) {\n  const str = [\n    'Content-Type: text/html; charset=\"UTF-8\"',\n    'MIME-Version: 1.0',\n    'Content-Transfer-Encoding: 7bit',\n    'to: ' + to,\n    'subject: ' + subject,\n    '',\n    body\n  ].join('\\n');\n\n  return Buffer.from(str).toString('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');\n}\n\nreturn candidates.map(c => {\n  const jTitle = jobTitle || \"Software Engineer\";\n  const iDate = interviewDate || \"TBD\";\n  const iTime = interviewTime || \"TBD\";\n  const ven = venue || \"Our Office\";\n  const map = mapLink || \"#\";\n  const cName = contactName || \"HR Team\";\n  const cPhone = contactPhone || \"\";\n  const parts = participants || \"\";\n  \n  let subject = emailSubject || `Interview Invitation: ${jTitle}`;\n  let htmlBody = emailBody;\n\n  if (!htmlBody) {\n      // Fallback to default template\n      htmlBody = `<div style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6;\">\n      <h2 style=\"color: #2563eb;\">Interview Invitation: ${jTitle}</h2>\n      <p>Dear ${c.name},</p>\n      <p>Thank you for applying for the <strong>${jTitle}</strong> position with us.</p>\n      <p>After carefully reviewing your profile, we are very impressed with your skills and work experience. We would like to invite you for an interview to discuss this opportunity further.</p>\n      ${customMessage ? `<p>${customMessage}</p>` : ''}\n      <div style=\"background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 20px 0;\">\n        <h3 style=\"margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;\">Interview Details</h3>\n        <table style=\"width: 100%; border-collapse: collapse;\">\n          <tr><td style=\"padding: 8px 0; color: #64748b; width: 120px;\"><strong>📅 Date:</strong></td><td style=\"color: #0f172a;\">${iDate}</td></tr>\n          <tr><td style=\"padding: 8px 0; color: #64748b;\"><strong>⏰ Time:</strong></td><td style=\"color: #0f172a;\">${iTime}</td></tr>\n          <tr><td style=\"padding: 8px 0; color: #64748b;\"><strong>📍 Venue:</strong></td><td style=\"color: #0f172a;\">${ven}</td></tr>\n          <tr><td style=\"padding: 8px 0; color: #64748b;\"><strong>🗺️ Map:</strong></td><td><a href=\"${map}\" style=\"color: #2563eb; text-decoration: none;\">View on Google Maps</a></td></tr>\n          <tr><td style=\"padding: 8px 0; color: #64748b;\"><strong>👤 Contact:</strong></td><td style=\"color: #0f172a;\">${cName} ${cPhone ? '(' + cPhone + ')' : ''}</td></tr>\n          ${parts ? '<tr><td style=\"padding: 8px 0; color: #64748b;\"><strong>👥 Participants:</strong></td><td style=\"color: #0f172a;\">' + parts + '</td></tr>' : ''}\n        </table>\n      </div>\n      <p>Please confirm your availability by replying to this email.</p>\n      <p>Best regards,<br><strong>${cName}</strong><br>Recruitment Team</p>\n    </div>`;\n  } else {\n      // Replace placeholders in custom body\n      htmlBody = htmlBody\n        .replace(/{name}/g, c.name)\n        .replace(/{job_title}/g, jTitle)\n        .replace(/{date}/g, iDate)\n        .replace(/{time}/g, iTime)\n        .replace(/{venue}/g, ven)\n        .replace(/{map_link}/g, map)\n        .replace(/{contact_name}/g, cName)\n        .replace(/{contact_phone}/g, cPhone ? `(${cPhone})` : '')\n        .replace(/{custom_message}/g, customMessage ? `<p>${customMessage}</p>` : '');\n  }\n\n  return {\n    json: {\n      ...c,\n      encodedEmail: createEmail(c.email, subject, htmlBody),\n      googleAccessToken: googleAccessToken\n    }\n  };\n});"
+      },
+      "id": "2fdc509f-9388-481d-93b0-10075ac02c86",
+      "name": "Split & Encode Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3152,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.googleAccessToken }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "raw",
+              "value": "={{ $json.encodedEmail }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d858aaa2-e689-4fb1-823d-422c1ebf010e",
+      "name": "HTTP - Send via Gmail API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        3408,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate results\nconst results = $input.all();\nconst sent = results.filter(r => !r.json.error).length;\n\nreturn [{\n  json: {\n    success: true,\n    sent: sent,\n    message: \"Emails sent successfully via User Gmail\"\n  }\n}];"
+      },
+      "id": "4c87eaee-7094-4c4b-8fb0-ab0dbc51b5d2",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3648,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "b802a261-e96b-41a7-b0c5-91a059195579",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        3856,
+        880
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Send Email": {
+      "main": [
+        [
+          {
+            "node": "Split & Encode Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split & Encode Email": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Send via Gmail API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Send via Gmail API": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4d9cadd0-f675-41cb-8dc7-95cc23e9d57d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1f0ace80c15495c142be3ac9803992d52e43298520239a6bf112c6360cbfde62"
+  },
+  "id": "aKC1Bx2wZQ6mBHu9",
+  "tags": []
+}
