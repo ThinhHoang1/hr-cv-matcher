@@ -21,7 +21,7 @@ Expand the **"Environment Variables"** section and add the following keys from y
 
 | Key | Value |
 |-----|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://zwektghppstkzdrvboxk.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://your-project.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *(Your Anon Key)* |
 | `SUPABASE_SERVICE_ROLE_KEY` | *(Your Service Role Key - Starts with `eyJ...`)* |
 | `GEMINI_API_KEY` | *(Your Gemini API Key)* |

@@ -9,9 +9,9 @@ import mammoth from 'mammoth';
 import { Buffer } from 'buffer';
 
 // Hardcode credentials to avoid env issues in script
-const SUPABASE_URL = 'https://zwektghppstkzdrvboxk.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3ZWt0Z2hwcHN0a3pkcnZib3hrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY3NjEyNCwiZXhwIjoyMDgwMjUyMTI0fQ.ky4ZF9akxVApkwL83xbFkyEn7bq-LFdgsYtORti7Dn0';
-const GEMINI_KEY = 'AI...'; // The user has this in .env, but for script we need it here. I will use the one from CONFIG logic if I can, but since this is a standalone script...
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+// const GEMINI_KEY = 'AI...'; // The user has this in .env, but for script we need it here. I will use the one from CONFIG logic if I can, but since this is a standalone script...
 // I will fetch it from the environment variable if possible, or ask the user. Wait, I see it usage in other files.
 // Let's assume process.env is not reliable without dotenv, so I'll trust the user to have it or use a placeholder they can fill, OR better: use the one I saw in config earlier.
 
@@ -20,9 +20,10 @@ const GEMINI_KEY = 'AI...'; // The user has this in .env, but for script we need
 
 const fs = require('fs');
 const path = require('path');
-const envPath = path.resolve(__dirname, '.env');
-const envConfig = require('dotenv').config({ path: envPath }).parsed || {};
-const GEMINI_API_KEY = envConfig.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+// Try to load from root config or local file
+require('dotenv').config();
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 

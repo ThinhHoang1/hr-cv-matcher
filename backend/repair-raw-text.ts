@@ -6,9 +6,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { CONFIG } from './src/config';
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 // Use config directly or hardcode if needed for script
-const SUPABASE_URL = 'https://zwektghppstkzdrvboxk.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3ZWt0Z2hwcHN0a3pkcnZib3hrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY3NjEyNCwiZXhwIjoyMDgwMjUyMTI0fQ.ky4ZF9akxVApkwL83xbFkyEn7bq-LFdgsYtORti7Dn0';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
