@@ -6,195 +6,123 @@ A modern SaaS application for HR teams to upload CVs, leverage AI-powered RAG te
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-38bdf8)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e)
+![Express](https://img.shields.io/badge/Express-4-green)
+![n8n](https://img.shields.io/badge/n8n-Workflow-orange)
 
 ## ✨ Features
 
-- 📤 **Bulk CV Upload**: Upload hundreds of CVs (PDF, DOCX) with drag-and-drop
-- 🤖 **AI Processing**: Automatic extraction of name, email, skills, experience via n8n
-- 🔍 **RAG-Based Search**: Find best candidates using vector similarity search
-- 📊 **Advanced Filtering**: Filter by skills, experience, keywords
-- ✉️ **Auto Invitations**: Send bulk interview emails with one click
-- 📈 **Dashboard Analytics**: Track candidates, invitations, and searches
-- 🎨 **Beautiful UI**: Modern glassmorphism design with TailwindCSS
-- 🔐 **Authentication**: Secure login with Clerk
+- 📤 **Bulk CV Upload**: Upload hundreds of CVs (PDF, DOCX) via the dashboard.
+- 🤖 **AI Processing**: Automatic extraction of candidate details (name, email, skills) using n8n workflows and AI.
+- 🔍 **RAG-Based Search**: Find the best candidates using vector similarity search powered by Google Gemini embeddings.
+- ✉️ **Auto Invitations**: Send interview invitations directly from the platform.
+- 🔐 **Secure Access**: Role-based access control with Supabase Authentication.
+- 📥 **Secure CV Download**: Securely view and download candidate CVs.
 
 ## 🏗 Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), React, TypeScript
-- **Styling**: TailwindCSS with custom animations
+### Frontend (`/frontend`)
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: TailwindCSS, Lucide React
+- **State/Auth**: Supabase Auth Helpers
+
+### Backend (`/backend`)
+- **Server**: Node.js with Express
+- **Language**: TypeScript
 - **Database**: Supabase (PostgreSQL)
-- **Authentication**: Clerk
-- **AI Processing**: n8n workflows with RAG
-- **Deployment**: Vercel
-- **File Upload**: react-dropzone
+- **File Storage**: Supabase Storage
+- **CV Parsing**: `pdf-parse`, `mammoth`
+- **AI/LLM**: Google Gemini (via n8n)
+
+### Infrastructure
+- **Workflows**: n8n (Webhooks for parsing, search, and email)
+- **Database & Auth**: Supabase
 
 ## 📁 Project Structure
 
 ```
 hr-cv-matcher/
-├── app/
-│   ├── api/
-│   │   ├── upload-cvs/route.ts      # Upload CV API
-│   │   ├── search-candidates/route.ts # AI search API
-│   │   └── send-invitations/route.ts  # Email API
-│   ├── dashboard/page.tsx            # Dashboard
-│   ├── upload/page.tsx               # CV upload page
-│   ├── candidates/page.tsx           # Candidate list
-│   ├── search/page.tsx               # AI search page
-│   ├── layout.tsx                    # Root layout
-│   └── globals.css                   # Global styles
-├── components/
-│   ├── Navbar.tsx                    # Navigation
-│   ├── StatsCard.tsx                 # Statistics cards
-│   ├── SkillBadge.tsx                # Skill tags
-│   └── LoadingSpinner.tsx            # Loading component
-├── lib/
-│   ├── supabase.ts                   # Supabase client
-│   ├── n8n.ts                        # n8n API functions
-│   ├── types.ts                      # TypeScript types
-│   └── utils.ts                      # Utility functions
-├── DATABASE.sql                      # Database schema
-├── DEPLOYMENT.md                     # Deployment guide
-└── package.json
+├── frontend/                 # Next.js Frontend Application
+│   ├── app/                  # App Router pages and layouts
+│   ├── components/           # Reusable UI components
+│   ├── lib/                  # Utilities and Supabase client
+│   └── public/               # Static assets
+├── backend/                  # Express Backend Server
+│   ├── src/
+│   │   ├── services/         # Business logic (CV processing, Search)
+│   │   ├── middleware/       # Auth and error handling
+│   │   └── index.ts          # Server entry point
+│   └── package.json
+└── README.md
 ```
 
 ## 🚀 Quick Start
 
-### 1. Clone & Install
+### Prerequisites
+- Node.js (v18+)
+- Supabase Project
+- n8n Instance (Self-hosted or Cloud)
+- Google Gemini API Key
 
+### 1. Installation
+
+**Frontend:**
 ```bash
-git clone <your-repo-url>
-cd CV_HR_project
+cd frontend
 npm install
 ```
 
-### 2. Setup Environment Variables
+**Backend:**
+```bash
+cd backend
+npm install
+```
 
-Copy `.env.example` to `.env.local` and fill in:
+### 2. Environment Setup
 
+Create a `.env.local` file in the `frontend` directory and a `.env` file in the `backend` directory.
+
+**Frontend (`frontend/.env.local`):**
 ```env
-# n8n Webhooks
-N8N_WEBHOOK_UPLOAD=https://your-n8n/webhook/cv-upload
-N8N_WEBHOOK_SEARCH=https://your-n8n/webhook/search
-N8N_WEBHOOK_SEND_MAIL=https://your-n8n/webhook/send-invite
-
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-key
-CLERK_SECRET_KEY=your-clerk-secret
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
 ```
 
-### 3. Setup Database
+**Backend (`backend/.env`):**
+```env
+PORT=4000
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+N8N_WEBHOOK_UPLOAD=your_n8n_upload_webhook
+N8N_WEBHOOK_SEARCH=your_n8n_search_webhook
+N8N_WEBHOOK_SEND_MAIL=your_n8n_email_webhook
+FRONTEND_URL=http://localhost:3000
+```
 
-1. Create a Supabase project
-2. Run `DATABASE.sql` in Supabase SQL Editor
-3. Copy API keys to `.env.local`
+### 3. Running the Project
 
-### 4. Configure n8n Workflows
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed n8n setup.
-
-### 5. Run Development Server
-
+**Start Backend:**
 ```bash
+cd backend
 npm run dev
+# Runs on http://localhost:4000
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
-
-## 📊 Database Schema
-
-- **candidates**: Store candidate information
-- **skills**: Master list of skills
-- **candidate_skills**: Many-to-many relationship
-- **job_descriptions**: Job postings
-- **search_results**: Cache AI search results
-- **invitations**: Track sent invitations
-
-## 🔗 N8N Workflows Required
-
-### 1. CV Upload Webhook
-- **Endpoint**: `/webhook/cv-upload`
-- **Function**: Extract data from PDF/DOCX using AI
-- **Returns**: Structured candidate data
-
-### 2. Search Webhook
-- **Endpoint**: `/webhook/search`
-- **Function**: RAG-based vector search for matching
-- **Returns**: Ranked candidate list with scores
-
-### 3. Email Webhook
-- **Endpoint**: `/webhook/send-invite`
-- **Function**: Send bulk interview invitations
-- **Returns**: Success/failure status
-
-## 🎨 UI Features
-
-- ✅ Glassmorphism cards
-- ✅ Gradient animations
-- ✅ Drag-and-drop file upload
-- ✅ Real-time progress tracking
-- ✅ Responsive design
-- ✅ Toast notifications
-- ✅ Loading states
-- ✅ Avatar generation
-
-## 📱 Pages
-
-1. **Landing** (`/`) - Marketing homepage
-2. **Dashboard** (`/dashboard`) - Statistics overview
-3. **Upload** (`/upload`) - Bulk CV upload
-4. **Candidates** (`/candidates`) - Browse and filter
-5. **Search** (`/search`) - AI-powered matching
-
-## 🔐 Authentication
-
-Using Clerk for secure authentication:
-- Email/password login
-- OAuth providers (Google, GitHub)
-- Session management
-- Protected routes
-
-## 🚀 Deployment
-
-Deploy to Vercel with one click:
-
+**Start Frontend:**
 ```bash
-npm i -g vercel
-vercel
+cd frontend
+npm run dev
+# Runs on http://localhost:3000
 ```
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete guide.
+## 🔗 N8N Workflows
 
-## 📈 Future Enhancements
-
-- [ ] Video interview scheduling
-- [ ] Candidate pipeline management
-- [ ] Advanced analytics dashboard
-- [ ] Mobile app (React Native)
-- [ ] Multi-language support
-- [ ] Custom email templates
-- [ ] Interview feedback forms
-- [ ] Integration with ATS systems
+The system relies on n8n webhooks for heavy lifting:
+1.  **CV Upload**: Receives file path, extracts text/metadata, generates embeddings, and updates Supabase.
+2.  **Search Candidate**: Accepts a query, converts to vector, performs similarity search in Supabase.
+3.  **Send Email**: Dispatches interview invitations.
 
 ## 🤝 Contributing
 
-Contributions welcome! Please read our contributing guidelines.
-
-## 📄 License
-
-MIT License - see LICENSE file
-
-## 💡 Support
-
-For issues and questions:
-- Open GitHub issues
-- Contact: your-email@example.com
-
----
-
-**Built with ❤️ using Next.js, Supabase, and n8n**
+ Contributions are welcome! Please feel free to submit a Pull Request.
