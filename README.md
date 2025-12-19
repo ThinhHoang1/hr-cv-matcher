@@ -20,39 +20,32 @@ A modern SaaS application for HR teams to upload CVs, leverage AI-powered RAG te
 
 ## 🏗 Tech Stack
 
-### Frontend (`/frontend`)
-- **Framework**: Next.js 14 (App Router)
+### Full Stack Application (`/frontend`)
+- **Framework**: Next.js 14 (App Router & API Routes)
 - **Language**: TypeScript
 - **Styling**: TailwindCSS, Lucide React
 - **State/Auth**: Supabase Auth Helpers
-
-### Backend (`/backend`)
-- **Server**: Node.js with Express
-- **Language**: TypeScript
+- **Server Logic**: Next.js API Routes (Serverless)
 - **Database**: Supabase (PostgreSQL)
 - **File Storage**: Supabase Storage
-- **CV Parsing**: `pdf-parse`, `mammoth`
-- **AI/LLM**: Google Gemini (via n8n)
+- **CV Parsing**: `mammoth`, `pdf-parse` (via Server Actions)
+- **AI/LLM**: Google Gemini (Direct API integration)
 
 ### Infrastructure
-- **Workflows**: n8n (Webhooks for parsing, search, and email)
+- **Workflows**: n8n (Optional: for heavy background tasks)
 - **Database & Auth**: Supabase
 
 ## 📁 Project Structure
 
 ```
 hr-cv-matcher/
-├── frontend/                 # Next.js Frontend Application
-│   ├── app/                  # App Router pages and layouts
+├── frontend/                 # Full Stack Next.js Application
+│   ├── app/                  # App Router pages and API routes
+│   │   ├── api/              # Backend API Routes (Serverless Functions)
+│   │   └── ...               # UI Pages
 │   ├── components/           # Reusable UI components
-│   ├── lib/                  # Utilities and Supabase client
+│   ├── lib/                  # Utilities, Services, and Supabase client
 │   └── public/               # Static assets
-├── backend/                  # Express Backend Server
-│   ├── src/
-│   │   ├── services/         # Business logic (CV processing, Search)
-│   │   ├── middleware/       # Auth and error handling
-│   │   └── index.ts          # Server entry point
-│   └── package.json
 └── README.md
 ```
 
@@ -61,55 +54,36 @@ hr-cv-matcher/
 ### Prerequisites
 - Node.js (v18+)
 - Supabase Project
-- n8n Instance (Self-hosted or Cloud)
 - Google Gemini API Key
+- (Optional) n8n Instance for background workflows
 
 ### 1. Installation
 
-**Frontend:**
 ```bash
 cd frontend
 npm install
 ```
 
-**Backend:**
-```bash
-cd backend
-npm install
-```
-
 ### 2. Environment Setup
 
-Create a `.env.local` file in the `frontend` directory and a `.env` file in the `backend` directory.
+Create a `.env.local` file in the `frontend` directory:
 
-**Frontend (`frontend/.env.local`):**
+**`frontend/.env.local`:**
 ```env
+# Client Side (Public)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
-```
 
-**Backend (`backend/.env`):**
-```env
-PORT=4000
-SUPABASE_URL=your_supabase_url
+# Server Side (Secret - do NOT expose to client)
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+GEMINI_API_KEY=your_gemini_api_key
 N8N_WEBHOOK_UPLOAD=your_n8n_upload_webhook
 N8N_WEBHOOK_SEARCH=your_n8n_search_webhook
 N8N_WEBHOOK_SEND_MAIL=your_n8n_email_webhook
-FRONTEND_URL=http://localhost:3000
 ```
 
 ### 3. Running the Project
 
-**Start Backend:**
-```bash
-cd backend
-npm run dev
-# Runs on http://localhost:4000
-```
-
-**Start Frontend:**
 ```bash
 cd frontend
 npm run dev
